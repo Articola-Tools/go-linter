@@ -1,0 +1,162 @@
+name: "New changes validation"
+
+on:
+    pull_request:  # yamllint disable-line rule:empty-values
+
+permissions:
+    contents: "read"
+    packages: "read"
+
+env:
+    REGISTRY: "ghcr.io"
+    IMAGE_NAME: "articola-tools/go-linter"
+
+jobs:
+    find-changed-files:
+        runs-on: "ubuntu-latest"
+        outputs:
+            is_yaml_changed: "${{ steps.filter.outputs.yaml }}"
+            is_dockerfile_changed: "${{ steps.filter.outputs.dockerfile }}"
+            is_go_linter_image_changed: "${{ steps.filter.outputs.go-linter-image }}"
+            is_markdown_changed: "${{ steps.filter.outputs.markdown }}"
+        permissions:
+            pull-requests: "read"
+        steps:
+            - name: "Checkout ${{ github.event.repository.name }}"
+              uses: "actions/checkout@v4"
+              with:
+                  fetch-depth: 1
+
+            - name: "Find changed files"
+              uses: "dorny/paths-filter@v3"
+              id: "filter"
+              with:
+                  filters: |
+                      yaml:
+                      - "**/*.yaml"
+                      - "**/*.yml"
+                      dockerfile:
+                      - "**/Dockerfile"
+                      go-linter-image:
+                      - "**/Dockerfile"
+                      - "**/.dockerignore"
+                      markdown:
+                      - "**/*.md"
+
+    validate-go-linter-image:
+        runs-on: "ubuntu-latest"
+        needs: "find-changed-files"
+        if: "${{ needs.find-changed-files.outputs.is_go_linter_image_changed == 'true' }}"
+
+        # NOTE: building and running Docker image of Go linter take around 1 minute.
+        # If this job takes more than 5 minutes, it means that something is wrong.
+        timeout-minutes: 5
+        steps:
+            - name: "Checkout ${{ github.event.repository.name }}"
+              uses: "actions/checkout@v4"
+
+            - name: "Set up Docker Buildx"
+              uses: "docker/setup-buildx-action@v3"
+
+            - name: "Login to Docker registry"
+              uses: "docker/login-action@v3"
+              with:
+                  registry: "${{ env.REGISTRY }}"
+                  username: "${{ github.actor }}"
+                  password: "${{ secrets.GITHUB_TOKEN }}"
+
+            - name: "Build Go linter Docker image"
+              uses: "docker/build-push-action@v6"
+              with:
+                  # NOTE: setup of `context` is needed to force builder to use the `.dockerignore` file.
+                  context: "."
+                  push: false
+                  load: true
+
+                  # NOTE: using another name to don't allow docker to download image from the internet in the next step.
+                  tags: "local/go-linter-pr:latest"
+                  cache-from: "type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+                  cache-to: "type=inline"
+
+            - name: "Test correctly formatted Go"
+              run: "docker run --rm -v ${{ github.workspace }}/tests/correct_go:/linter_workdir
+                    local/go-linter-pr:latest"
+
+            - name: "Test incorrectly formatted Go"
+              run: "docker run --rm -v ${{ github.workspace }}/tests/incorrect_go:/linter_workdir
+                    local/go-linter-pr:latest && { echo 'Incorrectly formatted Go test must fail!' >&2; exit 1; }
+                    || exit 0"
+
+            - name: "Run Dockerfile security scanner"
+              run: "docker run --rm --group-add $(getent group docker | cut -d: -f3)
+                    -v /var/run/docker.sock:/var/run/docker.sock
+                    ghcr.io/articola-tools/dockerfile-security-scanner local/go-linter-pr:latest"
+
+    validate-dockerfile-changes:
+        runs-on: "ubuntu-latest"
+        needs: "find-changed-files"
+        if: "${{ needs.find-changed-files.outputs.is_dockerfile_changed == 'true' }}"
+
+        # NOTE: validating Dockerfile changes takes around 1 minute.
+        # If this job takes more than 5 minutes, it means that something is wrong.
+        timeout-minutes: 5
+        steps:
+            - name: "Checkout ${{ github.event.repository.name }}"
+              uses: "actions/checkout@v4"
+
+            - name: "Login to Docker registry"
+              uses: "docker/login-action@v3"
+              with:
+                  registry: "${{ env.REGISTRY }}"
+                  username: "${{ github.actor }}"
+                  password: "${{ secrets.GITHUB_TOKEN }}"
+
+            - name: "Run Dockerfile linter"
+              run: "docker run --rm -v ${{ github.workspace }}:/linter_workdir/repo
+                    ${{ env.REGISTRY }}/articola-tools/dockerfile-linter:latest"
+
+    validate-yaml-changes:
+        runs-on: "ubuntu-latest"
+        needs: "find-changed-files"
+        if: "${{ needs.find-changed-files.outputs.is_yaml_changed == 'true' }}"
+
+        # NOTE: validating YAML changes takes around 1 minute.
+        # If this job takes more than 5 minutes, it means that something is wrong.
+        timeout-minutes: 5
+        steps:
+            - name: "Checkout ${{ github.event.repository.name }}"
+              uses: "actions/checkout@v4"
+
+            - name: "Login to Docker registry"
+              uses: "docker/login-action@v3"
+              with:
+                  registry: "${{ env.REGISTRY }}"
+                  username: "${{ github.actor }}"
+                  password: "${{ secrets.GITHUB_TOKEN }}"
+
+            - name: "Run YAML linter"
+              run: "docker run --rm -v ${{ github.workspace }}:/linter_workdir/repo
+                    ${{ env.REGISTRY }}/articola-tools/yaml-linter:latest"
+
+    validate-markdown-changes:
+        runs-on: "ubuntu-latest"
+        needs: "find-changed-files"
+        if: "${{ needs.find-changed-files.outputs.is_markdown_changed == 'true' }}"
+
+        # NOTE: validating Markdown changes takes around 1 minute.
+        # If this job takes more than 5 minutes, it means that something is wrong.
+        timeout-minutes: 5
+        steps:
+            - name: "Checkout ${{ github.event.repository.name }}"
+              uses: "actions/checkout@v4"
+
+            - name: "Login to Docker registry"
+              uses: "docker/login-action@v3"
+              with:
+                  registry: "${{ env.REGISTRY }}"
+                  username: "${{ github.actor }}"
+                  password: "${{ secrets.GITHUB_TOKEN }}"
+
+            - name: "Run Dockerfile linter"
+              run: "docker run --rm -v ${{ github.workspace }}:/linter_workdir/repo
+                    ${{ env.REGISTRY }}/articola-tools/markdown-linter:latest"
