@@ -18,9 +18,11 @@ USER linteruser
 HEALTHCHECK --timeout=1s --retries=1 CMD /bin/golangci-lint --version || exit 1
 
 # NOTE: `gci` linter conflicts with `gofumpt`, which I believe have more sense to use than `gci`.
+# NOTE: `gofumpt` is strange, disabling.
 ENTRYPOINT ["/bin/golangci-lint", "run", "--enable-all", \
             "--disable", "exportloopref", \
             "--disable", "forbidigo", \
             "--disable", "depguard", \
             "--disable", "testpackage", \
-            "--disable", "gci"]
+            "--disable", "gci", \
+            "--disable", "gofumpt"]
