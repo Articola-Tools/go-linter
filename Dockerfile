@@ -6,8 +6,8 @@ RUN addgroup -S lintergroup && adduser -S linteruser -G lintergroup  \
 # NOTE: setting this will allow to catch error if pipe command below fails.
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
-RUN apk add --no-cache curl=8.11.0-r2 go=1.23.4-r0 \
-    && curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /bin v1.62.0 \
+RUN apk add --no-cache curl=8.17.0-r1 go=1.25.7-r0 \
+    && curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /bin v2.10.1 \
     && apk del curl
 
 COPY .golangci.yml /.golangci.yml
