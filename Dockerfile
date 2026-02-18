@@ -100,5 +100,4 @@ ENTRYPOINT ["/bin/golangci-lint", "run", "--config", "/.golangci.yml", \
             "--disable", "forbidigo", \
             "--disable", "depguard", \
             "--disable", "testpackage", \
-            "--disable", "gci", \
             "--disable", "gofumpt"]
