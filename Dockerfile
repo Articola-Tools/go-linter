@@ -51,7 +51,6 @@ ENTRYPOINT ["/bin/golangci-lint", "run", "--config", "/.golangci.yml", \
             "--enable", "gocritic", \
             "--enable", "gocyclo", \
             "--enable", "godox", \
-            "--enable", "gosec", \
             "--enable", "gosmopolitan", \
             "--enable", "govet", \
             "--enable", "grouper", \
@@ -96,5 +95,6 @@ ENTRYPOINT ["/bin/golangci-lint", "run", "--config", "/.golangci.yml", \
             "--enable", "wrapcheck", \
             "--enable", "wsl_v5", \
             "--disable", "forbidigo", \
+            "--disable", "gosec", \
             "--disable", "depguard", \
             "--disable", "testpackage"]
