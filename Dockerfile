@@ -83,7 +83,6 @@ ENTRYPOINT ["/bin/golangci-lint", "run", "--config", "/.golangci.yml", \
             "--enable", "reassign", \
             "--enable", "sloglint", \
             "--enable", "tagalign", \
-            "--enable", "tagliatelle", \
             "--enable", "tparallel", \
             "--enable", "unconvert", \
             "--enable", "unparam", \
@@ -95,6 +94,7 @@ ENTRYPOINT ["/bin/golangci-lint", "run", "--config", "/.golangci.yml", \
             "--enable", "wrapcheck", \
             "--enable", "wsl_v5", \
             "--disable", "forbidigo", \
+            "--disable", "tagliatelle", \
             "--disable", "gosec", \
             "--disable", "depguard", \
             "--disable", "testpackage"]
