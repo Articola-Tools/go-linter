@@ -1,4 +1,4 @@
-FROM alpine:3.23
+FROM alpine:3.24
 
 RUN addgroup -S lintergroup && adduser -S linteruser -G lintergroup  \
     && mkdir /linter_workdir && chown -R linteruser:lintergroup /linter_workdir
