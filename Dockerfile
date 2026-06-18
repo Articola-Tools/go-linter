@@ -7,7 +7,7 @@ RUN addgroup -S lintergroup && adduser -S linteruser -G lintergroup  \
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
 RUN apk add --no-cache curl=8.20.0-r1 go=1.26.3-r0 \
-    && curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /bin v2.10.1 \
+    && curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /bin v2.12.2 \
     && apk del curl
 
 COPY .golangci.yml /.golangci.yml
